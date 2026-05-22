@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import InvoicesClient from './invoices-client';
 import { fetchAllInvoices, fetchCustomers } from '../../lib/data';
 

@@ -1,4 +1,7 @@
-export default function AnalyticsDashboard() {
+export const dynamic = 'force-dynamic';
+
+export default async function AnalyticsDashboard() {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   return (
     <div className="font-mono text-white pb-10">
       

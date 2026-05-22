@@ -12,10 +12,13 @@ import { formatCurrency } from './utils';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ================= VESSEL QUERIES =================
 
 export async function fetchVessels() {
   try {
+    await delay(1500);
     const data = await sql<any[]>`
       SELECT 
         v.*,
@@ -38,6 +41,7 @@ export async function fetchVessels() {
 
 export async function fetchLatestInvoices() {
   try {
+    await delay(1500);
     const data = await sql<any[]>`
       SELECT invoices.amount, users.full_name AS name, users.email, invoices.id, invoices.invoice_number
       FROM invoices
@@ -61,6 +65,7 @@ export async function fetchLatestInvoices() {
 
 export async function fetchCardData() {
   try {
+    await delay(1500);
     const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
     const vesselCountPromise = sql`SELECT COUNT(*) FROM vessels`;
     const invoiceStatusPromise = sql`
@@ -101,6 +106,7 @@ export async function fetchFilteredInvoices(
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
+    await delay(1500);
     const data = await sql<any[]>`
       SELECT
         invoices.id,
@@ -139,6 +145,7 @@ export async function fetchFilteredInvoices(
 
 export async function fetchInvoicesPages(query: string) {
   try {
+    await delay(1500);
     const data = await sql`
       SELECT COUNT(*)
       FROM invoices
@@ -241,6 +248,7 @@ export async function fetchFilteredCustomers(query: string) {
 
 export async function fetchAllInvoices() {
   try {
+    await delay(1500);
     const data = await sql<any[]>`
       SELECT
         invoices.id,

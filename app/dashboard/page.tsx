@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { fetchVessels } from '../lib/data';
 
 function getStatusColorHome(status: string) {

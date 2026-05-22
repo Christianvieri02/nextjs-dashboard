@@ -1,4 +1,7 @@
-export default function FleetMap() {
+export const dynamic = 'force-dynamic';
+
+export default async function FleetMap() {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   const telemetryData = [
     { id: 'V-7742-ALPHA', name: 'OCEAN NAVIGATOR', status: 'EN ROUTE', color: 'text-[#D977F9]', bg: 'bg-[#D977F9]/10', border: 'border-[#D977F9]', routeLabel: 'ROUTE', route: 'Jakarta ➔ Singapore', etaLabel: 'ETA', eta: '02:45 AM' },
     { id: 'V-9182-DELTA', name: 'MARITIME EXPLORER', status: 'DOCKED', color: 'text-[#00E5FF]', bg: 'bg-[#00E5FF]/10', border: 'border-[#00E5FF]', routeLabel: 'LOCATION', route: 'Terminal 4, Port Klang', etaLabel: 'STATUS', eta: 'Loading' },
