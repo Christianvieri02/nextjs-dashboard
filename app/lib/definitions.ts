@@ -1,29 +1,75 @@
-// This file contains type definitions for your data.
+// This file contains type definitions for your database schema.
 // It describes the shape of the data, and what data type each property should accept.
-// For simplicity of teaching, we're manually defining these types.
-// However, these types are generated automatically if you're using an ORM such as Prisma.
+
 export type User = {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string;
 };
+
+export type VesselType = 'Container Ship' | 'Bulk Carrier' | 'Tanker' | 'Cargo';
+export type VesselStatus = 'En Route' | 'In Port' | 'Delayed' | 'Maintenance' | 'Active' | 'Inactive';
+
+export type Vessel = {
+  id: string;
+  vessel_code: string;
+  name: string;
+  type: VesselType;
+  captain_name: string;
+  status: VesselStatus;
+  created_at?: string;
+};
+
+export type VesselSchedule = {
+  vessel_id: string;
+  origin_port: string;
+  destination_port: string;
+  eta: string;
+  is_active: boolean;
+  created_at?: string;
+};
+
+export type ShippingRate = {
+  id: string;
+  destination_city: string;
+  country: string;
+  rate_per_kg: number;
+  est_delivery_min_days: number;
+  est_delivery_max_days: number;
+};
+
+export type Shipment = {
+  id: string;
+  tracking_number: string;
+  user_id: string;
+  destination_id: string;
+  weight_kg: number;
+  total_cost: number;
+  created_at?: string;
+};
+
+export type InvoiceStatus = 'paid' | 'pending';
+
+export type Invoice = {
+  id: string;
+  invoice_number: string;
+  user_id: string;
+  shipment_id: string | null;
+  description: string | null;
+  amount: number;
+  status: InvoiceStatus;
+  issued_date: string;
+  created_at?: string;
+};
+
+// ================= COMPATIBILITY SHIMS & ALIASES =================
 
 export type Customer = {
   id: string;
   name: string;
   email: string;
   image_url: string;
-};
-
-export type Invoice = {
-  id: string;
-  customer_id: string;
-  amount: number;
-  date: string;
-  // In TypeScript, this is called a string union type.
-  // It means that the "status" property can only be one of the two strings: 'pending' or 'paid'.
-  status: 'pending' | 'paid';
 };
 
 export type Revenue = {
@@ -39,9 +85,13 @@ export type LatestInvoice = {
   amount: string;
 };
 
-// The database returns a number for amount, but we later format it to a string with the formatCurrency function
 export type LatestInvoiceRaw = Omit<LatestInvoice, 'amount'> & {
   amount: number;
+};
+
+export type CustomerField = {
+  id: string;
+  name: string;
 };
 
 export type InvoicesTable = {
@@ -52,7 +102,22 @@ export type InvoicesTable = {
   image_url: string;
   date: string;
   amount: number;
-  status: 'pending' | 'paid';
+  status: InvoiceStatus;
+  invoice_number?: string;
+  user_id?: string;
+  description?: string | null;
+};
+
+export type InvoiceForm = {
+  id: string;
+  customer_id: string;
+  amount: number;
+  status: InvoiceStatus;
+  invoice_number?: string;
+  user_id?: string;
+  shipment_id?: string | null;
+  description?: string | null;
+  issued_date?: string;
 };
 
 export type CustomersTableType = {
@@ -73,16 +138,4 @@ export type FormattedCustomersTable = {
   total_invoices: number;
   total_pending: string;
   total_paid: string;
-};
-
-export type CustomerField = {
-  id: string;
-  name: string;
-};
-
-export type InvoiceForm = {
-  id: string;
-  customer_id: string;
-  amount: number;
-  status: 'pending' | 'paid';
 };
