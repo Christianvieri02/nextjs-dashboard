@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CalculatorSkeleton } from '../../ui/skeletons';
+import { fetchShippingRatesAction } from '../../lib/actions';
 
 type DestinationRate = {
   name: string;
@@ -9,19 +10,6 @@ type DestinationRate = {
   rate: number;
   delivery: string;
 };
-
-const DESTINATIONS: DestinationRate[] = [
-  { name: 'Singapore', country: 'Singapore', rate: 15, delivery: '2 - 3 days' },
-  { name: 'Manila', country: 'Philippines', rate: 25, delivery: '4 - 5 days' },
-  { name: 'Bangkok', country: 'Thailand', rate: 22, delivery: '3 - 4 days' },
-  { name: 'Ho Chi Minh', country: 'Vietnam', rate: 20, delivery: '3 - 4 days' },
-  { name: 'Kuala Lumpur', country: 'Malaysia', rate: 18, delivery: '2 - 3 days' },
-  { name: 'Hong Kong', country: 'Hong Kong', rate: 30, delivery: '4 - 5 days' },
-  { name: 'Shanghai', country: 'China', rate: 35, delivery: '5 - 6 days' },
-  { name: 'Tokyo', country: 'Japan', rate: 45, delivery: '6 - 7 days' },
-  { name: 'Sydney', country: 'Australia', rate: 50, delivery: '8 - 9 days' },
-  { name: 'Mumbai', country: 'India', rate: 28, delivery: '5 - 6 days' },
-];
 
 type PriceBreakdown = {
   destination: string;
@@ -34,11 +22,33 @@ type PriceBreakdown = {
 };
 
 export default function PriceCalculator() {
+  const [destinations, setDestinations] = useState<DestinationRate[]>([]);
   const [selectedDest, setSelectedDest] = useState('');
   const [weight, setWeight] = useState('');
   const [breakdown, setBreakdown] = useState<PriceBreakdown | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    const loadRates = async () => {
+      setIsLoading(true);
+      setErrorMsg('');
+      try {
+        const res = await fetchShippingRatesAction();
+        if (res.success && res.data) {
+          setDestinations(res.data);
+        } else {
+          setErrorMsg(res.error || 'Failed to load shipping rates.');
+        }
+      } catch (err) {
+        console.error(err);
+        setErrorMsg('Failed to fetch shipping rates from server.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadRates();
+  }, []);
 
   const handleCalculate = () => {
     if (!selectedDest) {
@@ -56,33 +66,28 @@ export default function PriceCalculator() {
 
     setErrorMsg('');
     setBreakdown(null);
-    setIsLoading(true);
 
-    setTimeout(() => {
-      const destinationData = DESTINATIONS.find((d) => d.name === selectedDest);
-      if (!destinationData) {
-        setErrorMsg('Destination not found.');
-        setBreakdown(null);
-        setIsLoading(false);
-        return;
-      }
+    const destinationData = destinations.find((d) => d.name === selectedDest);
+    if (!destinationData) {
+      setErrorMsg('Destination not found.');
+      setBreakdown(null);
+      return;
+    }
 
-      const baseCost = numWeight * destinationData.rate;
-      const insuranceCost = baseCost * 0.02;
-      const handlingCost = 5.00;
-      const totalCost = baseCost + insuranceCost + handlingCost;
+    const baseCost = numWeight * destinationData.rate;
+    const insuranceCost = baseCost * 0.02;
+    const handlingCost = 5.00;
+    const totalCost = baseCost + insuranceCost + handlingCost;
 
-      setBreakdown({
-        destination: destinationData.name,
-        weight: numWeight,
-        ratePerKg: destinationData.rate,
-        baseCost,
-        insuranceCost,
-        handlingCost,
-        totalCost,
-      });
-      setIsLoading(false);
-    }, 600);
+    setBreakdown({
+      destination: destinationData.name,
+      weight: numWeight,
+      ratePerKg: destinationData.rate,
+      baseCost,
+      insuranceCost,
+      handlingCost,
+      totalCost,
+    });
   };
 
   return (
@@ -122,7 +127,7 @@ export default function PriceCalculator() {
                   className="w-full bg-[#151822] border border-gray-800 text-gray-300 text-xs p-3.5 pr-10 rounded-lg focus:border-[#D977F9]/70 focus:outline-none appearance-none cursor-pointer"
                 >
                   <option value="">Select a destination</option>
-                  {DESTINATIONS.map((dest) => (
+                  {destinations.map((dest) => (
                     <option key={dest.name} value={dest.name}>
                       {dest.name} ({dest.country})
                     </option>
@@ -271,7 +276,7 @@ export default function PriceCalculator() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/30">
-              {DESTINATIONS.map((dest) => (
+              {destinations.map((dest) => (
                 <tr key={dest.name} className="text-xs text-gray-300 hover:bg-[#151822]/75 transition-colors">
                   <td className="py-3.5 px-6 font-bold text-white">{dest.name}</td>
                   <td className="py-3.5 px-6 text-gray-400">{dest.country}</td>

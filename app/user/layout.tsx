@@ -51,11 +51,7 @@ export default function UserLayout({
 
   return (
     <div className="flex flex-col h-screen bg-[#0B0D14] text-white font-sans overflow-hidden">
-      
-      {/* Top Navbar */}
       <header className="h-16 bg-[#05050A] border-b border-gray-900 flex items-center justify-between px-8 z-50">
-        
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-[#D977F9]/10 border border-[#D977F9]/30 flex items-center justify-center text-[#D977F9]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,8 +62,6 @@ export default function UserLayout({
           </div>
           <span className="text-sm font-bold text-white tracking-widest uppercase">Sea Parcel</span>
         </div>
-
-        {/* Navigation Menu */}
         <nav className="flex items-center gap-1 h-full">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -90,10 +84,7 @@ export default function UserLayout({
             );
           })}
         </nav>
-
-        {/* User Controls */}
         <div className="flex items-center gap-6">
-          {/* Notification */}
           <div className="relative cursor-pointer group">
             <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -103,8 +94,6 @@ export default function UserLayout({
               4
             </span>
           </div>
-
-          {/* User profile */}
           <div className="flex items-center gap-3 pl-4 border-l border-gray-900">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-bold text-white leading-tight">User</p>
@@ -114,8 +103,6 @@ export default function UserLayout({
               👤
             </div>
           </div>
-
-          {/* Sign Out */}
           <Link
             href="/login"
             className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition"
@@ -130,8 +117,6 @@ export default function UserLayout({
         </div>
 
       </header>
-
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto bg-[#0B0D14]">
         {children}
       </main>

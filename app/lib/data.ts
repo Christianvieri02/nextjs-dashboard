@@ -44,7 +44,7 @@ export async function fetchLatestInvoices() {
     await delay(1500);
     const data = await sql<any[]>`
       SELECT invoices.amount, users.full_name AS name, users.email, invoices.id, invoices.invoice_number
-      FROM invoices
+      FROM invoices_new invoices
       JOIN users ON invoices.user_id = users.id
       ORDER BY invoices.issued_date DESC
       LIMIT 5`;
@@ -66,13 +66,13 @@ export async function fetchLatestInvoices() {
 export async function fetchCardData() {
   try {
     await delay(1500);
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
+    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices_new`;
     const vesselCountPromise = sql`SELECT COUNT(*) FROM vessels`;
     const invoiceStatusPromise = sql`
       SELECT
         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-      FROM invoices
+      FROM invoices_new invoices
     `;
 
     const data = await Promise.all([
@@ -118,7 +118,7 @@ export async function fetchFilteredInvoices(
         invoices.description,
         users.full_name AS name,
         users.email
-      FROM invoices
+      FROM invoices_new invoices
       JOIN users ON invoices.user_id = users.id
       WHERE
         users.full_name ILIKE ${`%${query}%`} OR
@@ -148,7 +148,7 @@ export async function fetchInvoicesPages(query: string) {
     await delay(1500);
     const data = await sql`
       SELECT COUNT(*)
-      FROM invoices
+      FROM invoices_new invoices
       JOIN users ON invoices.user_id = users.id
       WHERE
         users.full_name ILIKE ${`%${query}%`} OR
@@ -179,7 +179,7 @@ export async function fetchInvoiceById(id: string) {
         invoices.shipment_id,
         invoices.description,
         invoices.issued_date
-      FROM invoices
+      FROM invoices_new invoices
       WHERE invoices.id = ${id};
     `;
 
@@ -224,7 +224,7 @@ export async function fetchFilteredCustomers(query: string) {
         SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
         SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
       FROM users
-      LEFT JOIN invoices ON users.id = invoices.user_id
+      LEFT JOIN invoices_new invoices ON users.id = invoices.user_id
       WHERE
         users.full_name ILIKE ${`%${query}%`} OR
         users.email ILIKE ${`%${query}%`}
@@ -260,7 +260,7 @@ export async function fetchAllInvoices() {
         invoices.description,
         users.full_name AS name,
         users.email
-      FROM invoices
+      FROM invoices_new invoices
       JOIN users ON invoices.user_id = users.id
       ORDER BY invoices.issued_date DESC
     `;

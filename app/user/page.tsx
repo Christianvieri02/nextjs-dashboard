@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ShipmentTrackerSkeleton } from '../ui/skeletons';
+import { trackShipmentAction } from '../lib/actions';
 
 type TrackingStep = {
   status: string;
@@ -20,59 +21,13 @@ type TrackingData = {
   steps: TrackingStep[];
 };
 
-const DUMMY_DATA: Record<string, TrackingData> = {
-  'OL2026041301': {
-    status: 'In Transit',
-    origin: 'Jakarta Port, ID',
-    destination: 'Singapore Port, SG',
-    estArrival: 'April 22, 2026',
-    vessel: 'Oceanic Horizon',
-    steps: [
-      { status: 'Order Processed', location: 'Jakarta, ID', date: 'April 13, 2026 08:30 AM', completed: true },
-      { status: 'Cargo Loaded', location: 'Jakarta Port, ID', date: 'April 14, 2026 14:15 PM', completed: true },
-      { status: 'Departed from Origin Port', location: 'Jakarta Port, ID', date: 'April 15, 2026 09:00 AM', completed: true },
-      { status: 'Arrived at Transit Port', location: 'Batam Port, ID', date: 'April 17, 2026 11:45 AM', completed: true },
-      { status: 'In Transit to Destination', location: 'Batam Port, ID' , date: 'April 18, 2026 08:00 AM', completed: true },
-      { status: 'Arriving at Destination', location: 'Singapore Port, SG', date: 'Pending', completed: false }
-    ]
-  },
-  'OL2026041302': {
-    status: 'Delivered',
-    origin: 'Surabaya Port, ID',
-    destination: 'Tokyo Port, JP',
-    estArrival: 'April 15, 2026',
-    vessel: 'Pacific Voyager',
-    steps: [
-      { status: 'Order Processed', location: 'Surabaya, ID', date: 'April 05, 2026 09:10 AM', completed: true },
-      { status: 'Cargo Loaded', location: 'Surabaya Port, ID', date: 'April 06, 2026 16:20 PM', completed: true },
-      { status: 'Departed from Origin Port', location: 'Surabaya Port, ID', date: 'April 07, 2026 10:00 AM', completed: true },
-      { status: 'Arrived at Destination Port', location: 'Tokyo Port, JP', date: 'April 14, 2026 14:00 PM', completed: true },
-      { status: 'Cargo Unloaded', location: 'Tokyo Port, JP', date: 'April 15, 2026 08:30 AM', completed: true },
-      { status: 'Delivered', location: 'Tokyo Customer Center', date: 'April 15, 2026 13:45 PM', completed: true }
-    ]
-  },
-  'OL2026041303': {
-    status: 'Delayed',
-    origin: 'Belawan Port, ID',
-    destination: 'Shanghai Port, CN',
-    estArrival: 'May 02, 2026',
-    vessel: 'Red Dragon',
-    steps: [
-      { status: 'Order Processed', location: 'Medan, ID', date: 'April 16, 2026 10:00 AM', completed: true },
-      { status: 'Cargo Loaded', location: 'Belawan Port, ID', date: 'April 17, 2026 13:00 PM', completed: true },
-      { status: 'Customs Clearance Delay', location: 'Belawan Port, ID', date: 'April 18, 2026 09:00 AM', completed: true, warning: true },
-      { status: 'Departed from Origin Port', location: 'Pending', date: 'Pending', completed: false }
-    ]
-  }
-};
-
 export default function UserDashboard() {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const performTracking = (num: string) => {
+  const performTracking = async (num: string) => {
     const trimmed = num.trim();
     if (!trimmed) {
       setErrorMsg('Please enter a tracking number.');
@@ -84,17 +39,22 @@ export default function UserDashboard() {
     setErrorMsg('');
     setTrackingData(null);
 
-    setTimeout(() => {
-      const data = DUMMY_DATA[trimmed];
-      if (data) {
-        setTrackingData(data);
+    try {
+      const res = await trackShipmentAction(trimmed);
+      if (res.success && res.data) {
+        setTrackingData(res.data as TrackingData);
         setErrorMsg('');
       } else {
         setTrackingData(null);
-        setErrorMsg('Tracking number not found. Try one of the sample numbers.');
+        setErrorMsg(res.error || 'Tracking number not found. Try one of the sample numbers.');
       }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('An error occurred while tracking the shipment.');
+      setTrackingData(null);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const handleTrack = () => {
@@ -147,7 +107,8 @@ export default function UserDashboard() {
         Try these sample tracking numbers: &nbsp;
         <button onClick={() => handleSampleClick('OL2026041301')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041301</button> &nbsp;|&nbsp; 
         <button onClick={() => handleSampleClick('OL2026041302')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041302</button> &nbsp;|&nbsp; 
-        <button onClick={() => handleSampleClick('OL2026041303')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041303</button>
+        <button onClick={() => handleSampleClick('OL2026041303')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041303</button> &nbsp;|&nbsp; 
+        <button onClick={() => handleSampleClick('VS010')} className="text-[#D977F9] hover:underline underline-offset-2">VS010</button>
       </div>
 
       {errorMsg && (

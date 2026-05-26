@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { BillingSkeleton } from '../../ui/skeletons';
+import { fetchUserInvoicesAction } from '../../lib/actions';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 type Invoice = {
   id: string;
@@ -12,62 +18,46 @@ type Invoice = {
   hasDownload: boolean;
 };
 
-const INVOICES_DATA: Invoice[] = [
-  {
-    id: 'INV-2026-001',
-    description: 'Express Shipping to Singapore (OL2026041301)',
-    date: 'Apr 13, 2026',
-    amount: '$150.00',
-    status: 'Paid',
-    hasDownload: false,
-  },
-  {
-    id: 'INV-2026-002',
-    description: 'Standard Shipping to Manila (OL2026041303)',
-    date: 'Apr 14, 2026',
-    amount: '$85.50',
-    status: 'Pending',
-    hasDownload: true,
-  },
-  {
-    id: 'INV-2026-003',
-    description: 'Freight Shipping to Kuala Lumpur',
-    date: 'Apr 1, 2026',
-    amount: '$450.00',
-    status: 'Overdue',
-    hasDownload: true,
-  },
-  {
-    id: 'INV-2026-004',
-    description: 'Express Shipping to Sydney',
-    date: 'Apr 16, 2026',
-    amount: '$220.00',
-    status: 'Pending',
-    hasDownload: true,
-  },
-  {
-    id: 'INV-2026-005',
-    description: 'Standard Shipping to Bangkok',
-    date: 'Mar 25, 2026',
-    amount: '$65.00',
-    status: 'Paid',
-    hasDownload: false,
-  },
-];
-
 export default function BillingInvoices() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const fetchUserAndInvoices = async () => {
+      setIsLoading(true);
+      setErrorMsg('');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const email = session?.user?.email || 'user@seaparcel.com';
+        
+        const res = await fetchUserInvoicesAction(email);
+        if (res.success && res.data) {
+          const mapped = res.data.map((inv: any) => ({
+            id: inv.id,
+            description: inv.description,
+            date: inv.date,
+            amount: inv.amount,
+            status: inv.status as 'Paid' | 'Pending',
+            hasDownload: inv.hasDownload
+          }));
+          setInvoices(mapped);
+        } else {
+          setErrorMsg(res.error || 'Failed to fetch invoices.');
+        }
+      } catch (err) {
+        console.error(err);
+        setErrorMsg('Failed to load user billing invoices.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserAndInvoices();
   }, [searchQuery, statusFilter]);
 
   const handleDownload = (id: string) => {
@@ -77,7 +67,7 @@ export default function BillingInvoices() {
     }, 3000);
   };
 
-  const filteredInvoices = INVOICES_DATA.filter((invoice) => {
+  const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
       invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -146,7 +136,7 @@ export default function BillingInvoices() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>
               <div className="absolute right-0 mt-2 w-48 bg-[#151822] border border-gray-800 rounded-lg shadow-2xl z-20 overflow-hidden animate-fadeIn">
-                {['all', 'paid', 'pending', 'overdue'].map((status) => (
+                {['all', 'paid', 'pending'].map((status) => (
                   <button
                     key={status}
                     onClick={() => {
@@ -167,6 +157,12 @@ export default function BillingInvoices() {
           )}
         </div>
       </div>
+
+      {errorMsg && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded mb-6 text-sm">
+          {errorMsg}
+        </div>
+      )}
 
       <div className="bg-[#151822]/40 rounded-lg border border-gray-800/80 shadow-2xl overflow-hidden backdrop-blur-sm">
         <div className="overflow-x-auto">
@@ -216,31 +212,20 @@ export default function BillingInvoices() {
                     </td>
 
                     <td className="py-4.5 px-6 whitespace-nowrap">
-                      {invoice.status === 'Paid' && (
+                      {invoice.status === 'Paid' ? (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-500/10 border border-green-500/20 text-green-400">
                           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                           Paid
                         </span>
-                      )}
-                      {invoice.status === 'Pending' && (
+                      ) : (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-500/10 border border-yellow-500/20 text-yellow-500">
                           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                           </svg>
                           Pending
-                        </span>
-                      )}
-                      {invoice.status === 'Overdue' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/10 border border-red-500/20 text-red-400">
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                          </svg>
-                          Overdue
                         </span>
                       )}
                     </td>
