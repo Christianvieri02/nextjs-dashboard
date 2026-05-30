@@ -11,6 +11,7 @@ interface VesselItem {
   type: 'Container Ship' | 'Bulk Carrier' | 'Tanker' | 'Cargo';
   captain_name: string;
   status: 'En Route' | 'In Port' | 'Delayed' | 'Maintenance' | 'Active' | 'Inactive';
+  capacity_muatan?: string | null;
   origin_port?: string | null;
   destination_port?: string | null;
   eta?: string | null;
@@ -81,6 +82,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
   const [destinationPortInput, setDestinationPortInput] = useState('');
   const [etaInput, setEtaInput] = useState(new Date().toISOString().split('T')[0] + 'T12:00');
   const [isActiveInput, setIsActiveInput] = useState(true);
+  const [capacityMuatanInput, setCapacityMuatanInput] = useState('1000 Ton');
   
   const [editingVesselId, setEditingVesselId] = useState<string | null>(null);
   const [deletingVesselId, setDeletingVesselId] = useState<string | null>(null);
@@ -109,6 +111,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
     setDestinationPortInput('');
     setEtaInput(new Date().toISOString().split('T')[0] + 'T12:00');
     setIsActiveInput(true);
+    setCapacityMuatanInput('1000 Ton');
     setEditingVesselId(null);
   };
 
@@ -128,7 +131,8 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
       originPortInput,
       destinationPortInput,
       new Date(etaInput).toISOString(),
-      isActiveInput
+      isActiveInput,
+      capacityMuatanInput
     );
 
     if (res.success) {
@@ -149,6 +153,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
     setStatusInput(vessel.status);
     setOriginPortInput(vessel.origin_port || '');
     setDestinationPortInput(vessel.destination_port || '');
+    setCapacityMuatanInput(vessel.capacity_muatan || '1000 Ton');
     
     if (vessel.eta) {
       const etaDate = new Date(vessel.eta);
@@ -177,7 +182,8 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
       originPortInput,
       destinationPortInput,
       new Date(etaInput).toISOString(),
-      isActiveInput
+      isActiveInput,
+      capacityMuatanInput
     );
 
     if (res.success) {
@@ -269,6 +275,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 <th className="p-5 font-normal">NAME</th>
                 <th className="p-5 font-normal">TYPE</th>
                 <th className="p-5 font-normal">CAPTAIN</th>
+                <th className="p-5 font-normal">CAPACITY</th>
                 <th className="p-5 font-normal">STATUS</th>
                 <th className="p-5 font-normal">ROUTE</th>
                 <th className="p-5 font-normal">ETA</th>
@@ -278,7 +285,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
             <tbody className="text-xs text-gray-400 divide-y divide-gray-800/30">
               {filteredVessels.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-gray-500 font-mono">
+                  <td colSpan={9} className="p-10 text-center text-gray-500 font-mono">
                     NO VESSELS REGISTERED IN FLEET
                   </td>
                 </tr>
@@ -309,6 +316,8 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                           {vessel.captain_name}
                         </div>
                       </td>
+
+                      <td className="p-5 font-bold text-white">{vessel.capacity_muatan || '1000 Ton'}</td>
                       
                       <td className="p-5">
                         <span className={`px-3 py-1 rounded-full text-[9px] border ${statusColor}`}>
@@ -427,20 +436,33 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Status</label>
-                <select
-                  value={statusInput}
-                  onChange={(e) => setStatusInput(e.target.value as any)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
-                >
-                  <option value="En Route">En Route</option>
-                  <option value="In Port">In Port</option>
-                  <option value="Delayed">Delayed</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Status</label>
+                  <select
+                    value={statusInput}
+                    onChange={(e) => setStatusInput(e.target.value as any)}
+                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  >
+                    <option value="En Route">En Route</option>
+                    <option value="In Port">In Port</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kapasitas Muatan *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. 1000 Ton"
+                    value={capacityMuatanInput}
+                    onChange={(e) => setCapacityMuatanInput(e.target.value)}
+                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  />
+                </div>
               </div>
 
               <div className="border-t border-gray-800/80 pt-4 mt-2">
@@ -578,20 +600,32 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Status</label>
-                <select
-                  value={statusInput}
-                  onChange={(e) => setStatusInput(e.target.value as any)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
-                >
-                  <option value="En Route">En Route</option>
-                  <option value="In Port">In Port</option>
-                  <option value="Delayed">Delayed</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Status</label>
+                  <select
+                    value={statusInput}
+                    onChange={(e) => setStatusInput(e.target.value as any)}
+                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  >
+                    <option value="En Route">En Route</option>
+                    <option value="In Port">In Port</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kapasitas Muatan *</label>
+                  <input
+                    required
+                    type="text"
+                    value={capacityMuatanInput}
+                    onChange={(e) => setCapacityMuatanInput(e.target.value)}
+                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  />
+                </div>
               </div>
 
               <div className="border-t border-gray-800/80 pt-4 mt-2">

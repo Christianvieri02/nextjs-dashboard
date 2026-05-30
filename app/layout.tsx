@@ -1,5 +1,14 @@
+import { Metadata } from 'next';
 import "./globals.css";
 import Navbar from './ui/navbar';
+
+export const metadata: Metadata = {
+  title: {
+    template: '%s | Sea Parcel',
+    default: 'Sea Parcel - Express Shipping & Cargo Management',
+  },
+  description: 'Express shipping portal and cargo management system.',
+};
 
 export default function RootLayout({
   children,

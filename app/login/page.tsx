@@ -1,8 +1,9 @@
 'use client'; // Wajib ditambahkan untuk interaksi klik
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { registerUserAction, loginUserAction } from '../lib/actions';
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -17,48 +18,109 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // State untuk registrasi
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
   
   // Router untuk berpindah halaman
   const router = useRouter();
 
+  // Hapus sesi pengguna saat halaman dimuat (auto sign-out)
+  useEffect(() => {
+    localStorage.removeItem('user_session');
+  }, []);
 
   // Fungsi saat tombol login ditekan
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); 
     setIsLoading(true);
     setErrorMsg(''); 
+    setSuccessMsg('');
 
-    const currentUsername = username.toLowerCase();
+    try {
+      const res = await loginUserAction(username, password, activeTab);
+      if (res.success && res.user) {
+        // Simpan detail sesi login ke localStorage
+        localStorage.setItem('user_session', JSON.stringify({
+          id: res.user.id,
+          username: res.user.username,
+          role: res.user.role,
+          email: res.user.email,
+          fullName: res.user.fullName,
+          phone: res.user.phone
+        }));
 
-    if (activeTab === 'admin' && currentUsername !== 'admin') {
-      setErrorMsg('Akses ditolak! Kredensial ini bukan milik Admin.');
+        if (activeTab === 'user') {
+          router.push('/user'); 
+        } else {
+          router.push('/dashboard'); 
+        }
+      } else {
+        setErrorMsg(res.error || 'Akses ditolak! Periksa kembali kredensial Anda.');
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setErrorMsg('Terjadi kesalahan saat masuk.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fungsi saat tombol registrasi ditekan
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const trimmedEmail = regEmail.trim();
+    const trimmedPhone = regPhone.trim();
+
+    if (!trimmedEmail) {
+      setErrorMsg('Email tidak boleh kosong.');
+      setIsLoading(false);
+      return;
+    }
+    if (!trimmedPhone) {
+      setErrorMsg('Nomor telepon tidak boleh kosong.');
+      setIsLoading(false);
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setErrorMsg('Password dan Konfirmasi Password tidak cocok.');
       setIsLoading(false);
       return;
     }
 
-    if (activeTab === 'user' && currentUsername === 'admin') {
-      setErrorMsg('Silakan gunakan tab ADMIN untuk masuk ke sistem manajemen.');
+    try {
+      const res = await registerUserAction(fullName, trimmedEmail, trimmedPhone, regPassword);
+      if (res.success) {
+        setSuccessMsg('Akun berhasil terdaftar! Silakan masuk dengan kredensial Anda.');
+        setUsername(trimmedEmail);
+        setPassword(regPassword);
+        setActiveTab('user');
+        setIsRegistering(false);
+
+        // Reset state input form registrasi
+        setFullName('');
+        setRegEmail('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegConfirmPassword('');
+      } else {
+        setErrorMsg(res.error || 'Gagal mendaftarkan akun.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg('Terjadi kesalahan saat mendaftarkan akun.');
+    } finally {
       setIsLoading(false);
-      return;
-    }
-
-    const dummyEmail = `${currentUsername}@seaparcel.com`;
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: dummyEmail,
-      password: password,
-    });
-
-    if (error) {
-      console.error('Login error:', error.message);
-      setErrorMsg('Akses ditolak! Periksa kembali kredensial Anda.');
-      setIsLoading(false);
-      return;
-    }
-    if (activeTab === 'user') {
-      router.push('/user'); 
-    } else {
-      router.push('/dashboard'); 
     }
   };
 
@@ -89,79 +151,231 @@ export default function LoginPage() {
         {/* Borang Log Masuk */}
         <div className="bg-[#11131A] p-8 rounded-lg border border-gray-800 shadow-2xl">
           
-          {/* Tab Pengguna / Admin (BISA DIKLIK) */}
-          <div className="flex mb-8 rounded bg-black overflow-hidden border border-gray-800">
-            <button 
-              type="button"
-              onClick={() => setActiveTab('user')}
-              className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'user' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              USER
-            </button>
-            <button 
-              type="button"
-              onClick={() => setActiveTab('admin')}
-              className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'admin' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              ADMIN
-            </button>
-          </div>
+          {isRegistering ? (
+            <>
+              {/* Header Registrasi */}
+              <div className="mb-8 text-center">
+                <h2 className="text-lg font-bold text-white tracking-widest uppercase">BUAT AKUN BARU</h2>
+                <p className="text-gray-500 text-[10px] tracking-wide mt-1">DAFTAR UNTUK MENGAKSES PORTAL SEA PARCEL</p>
+              </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            
-            {errorMsg && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-xs p-3 rounded text-center font-semibold">
-                {errorMsg}
-              </div>
-            )}
+              <form onSubmit={handleRegister} className="space-y-6">
+                {errorMsg && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-xs p-3 rounded text-center font-semibold">
+                    {errorMsg}
+                  </div>
+                )}
 
-            <div>
-              <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
-                {activeTab === 'admin' ? 'Admin ID' : 'Username'}
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-3 text-gray-500">👤</span>
-                <input 
-                  required 
-                  type="text" 
-                  value={username} /* <-- INI WAJIB ADA */
-                  onChange={(e) => setUsername(e.target.value)} /* <-- INI WAJIB ADA */
-                  placeholder="ENTER CREDENTIALS" 
-                  className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
-                />
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-white text-[10px] font-bold tracking-widest uppercase">Password</label>
-                <a href="#" className="text-gray-500 text-[10px] hover:text-[#D977F9]">FORGOT KEY?</a>
-              </div>
-              <div className="relative">
-                <span className="absolute left-4 top-3 text-gray-500">🔒</span>
-                <input 
-                  required 
-                  type="password" 
-                  value={password} /* <-- INI WAJIB ADA */
-                  onChange={(e) => setPassword(e.target.value)} /* <-- INI WAJIB ADA */
-                  placeholder="••••••••" 
-                  className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
-                />
-              </div>
-            </div>
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    Nama Lengkap
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">✍️</span>
+                    <input 
+                      required 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="NAMA LENGKAP ANDA" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
 
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className={`w-full font-bold text-xs tracking-widest py-4 rounded transition mt-4 ${
-                isLoading 
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                : 'bg-[#D977F9] text-[#250F2D] hover:bg-[#c75be9] active:scale-[0.98]'
-              }`}
-            >
-              {isLoading ? 'AUTHENTICATING...' : 'ACCESS SYSTEM'}
-            </button>
-          </form>
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">✉️</span>
+                    <input 
+                      required 
+                      type="email" 
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      placeholder="ALAMAT EMAIL ANDA" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    Nomor Telepon
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">📞</span>
+                    <input 
+                      required 
+                      type="tel" 
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="NOMOR TELEPON AKTIF" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">🔒</span>
+                    <input 
+                      required 
+                      type="password" 
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="••••••••" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    Konfirmasi Password
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">🔒</span>
+                    <input 
+                      required 
+                      type="password" 
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      placeholder="••••••••" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className={`w-full font-bold text-xs tracking-widest py-4 rounded transition mt-4 ${
+                    isLoading 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-[#D977F9] text-[#250F2D] hover:bg-[#c75be9] active:scale-[0.98]'
+                  }`}
+                >
+                  {isLoading ? 'CREATING ACCOUNT...' : 'DAFTAR SEKARANG'}
+                </button>
+
+                <div className="text-center mt-4">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsRegistering(false);
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                    }}
+                    className="text-gray-500 hover:text-[#D977F9] text-[10px] font-bold tracking-widest uppercase"
+                  >
+                    ← KEMBALI KE LOGIN
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <>
+              {/* Tab Pengguna / Admin (BISA DIKLIK) */}
+              <div className="flex mb-8 rounded bg-black overflow-hidden border border-gray-800">
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('user')}
+                  className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'user' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  USER
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('admin')}
+                  className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'admin' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  ADMIN
+                </button>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                
+                {successMsg && (
+                  <div className="bg-green-500/10 border border-green-500/50 text-green-400 text-xs p-3 rounded text-center font-semibold">
+                    {successMsg}
+                  </div>
+                )}
+
+                {errorMsg && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-xs p-3 rounded text-center font-semibold">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-white text-[10px] font-bold mb-2 tracking-widest uppercase">
+                    {activeTab === 'admin' ? 'Admin ID' : 'Username / Email'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">👤</span>
+                    <input 
+                      required 
+                      type="text" 
+                      value={username} /* <-- INI WAJIB ADA */
+                      onChange={(e) => setUsername(e.target.value)} /* <-- INI WAJIB ADA */
+                      placeholder={activeTab === 'admin' ? "ENTER ADMIN ID" : "USERNAME OR EMAIL"} 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-white text-[10px] font-bold tracking-widest uppercase">Password</label>
+                    <a href="#" className="text-gray-500 text-[10px] hover:text-[#D977F9]">FORGOT KEY?</a>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 text-gray-500">🔒</span>
+                    <input 
+                      required 
+                      type="password" 
+                      value={password} /* <-- INI WAJIB ADA */
+                      onChange={(e) => setPassword(e.target.value)} /* <-- INI WAJIB ADA */
+                      placeholder="••••••••" 
+                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className={`w-full font-bold text-xs tracking-widest py-4 rounded transition mt-4 ${
+                    isLoading 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-[#D977F9] text-[#250F2D] hover:bg-[#c75be9] active:scale-[0.98]'
+                  }`}
+                >
+                  {isLoading ? 'AUTHENTICATING...' : 'ACCESS SYSTEM'}
+                </button>
+
+                <div className="text-center mt-4">
+                  <span className="text-gray-500 text-[10px]">Belum memiliki akses? </span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsRegistering(true);
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                    }}
+                    className="text-[#00E5FF] hover:text-[#D977F9] text-[10px] font-bold tracking-widest uppercase"
+                  >
+                    Daftar Sekarang
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
 
           <div className="mt-8 text-center border-t border-gray-800 pt-6">
             <p className="text-[#00E5FF] text-[9px] font-bold tracking-[0.1em] flex items-center justify-center gap-2 mb-2">

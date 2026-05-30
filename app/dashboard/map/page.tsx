@@ -1,4 +1,9 @@
-export const dynamic = 'force-dynamic';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Peta Pelacakan Live',
+  description: 'Peta rute pelayaran dan pelacakan live armada kapal.',
+};
 
 export default async function FleetMap() {
   await new Promise((resolve) => setTimeout(resolve, 1500));

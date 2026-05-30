@@ -32,8 +32,23 @@ export default function BillingInvoices() {
       setIsLoading(true);
       setErrorMsg('');
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const email = session?.user?.email || 'user@seaparcel.com';
+        let email = 'user@seaparcel.com';
+        try {
+          const sessionStr = localStorage.getItem('user_session');
+          if (sessionStr) {
+            const sess = JSON.parse(sessionStr);
+            if (sess.email) {
+              email = sess.email;
+            }
+          } else {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.email) {
+              email = session.user.email;
+            }
+          }
+        } catch (e) {
+          console.error('Error reading local session:', e);
+        }
         
         const res = await fetchUserInvoicesAction(email);
         if (res.success && res.data) {

@@ -1,4 +1,9 @@
-export const dynamic = 'force-dynamic';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Analitik Operasional',
+  description: 'Analitik operasional dan performa armada kapal.',
+};
 
 export default async function AnalyticsDashboard() {
   await new Promise((resolve) => setTimeout(resolve, 1500));

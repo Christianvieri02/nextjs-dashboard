@@ -12,6 +12,7 @@ async function seedDatabase() {
     await sql`DROP TABLE IF EXISTS shipping_rates CASCADE`;
     await sql`DROP TABLE IF EXISTS voyages CASCADE`;
     await sql`DROP TABLE IF EXISTS vessels CASCADE`;
+    await sql`DROP TABLE IF EXISTS "user" CASCADE`;
     await sql`DROP TABLE IF EXISTS users CASCADE`;
     await sql`DROP TABLE IF EXISTS customers CASCADE`;
     await sql`DROP TABLE IF EXISTS revenue CASCADE`;
@@ -30,11 +31,31 @@ async function seedDatabase() {
 
     // 3. Create tables
     await sql`
+      CREATE TABLE "user" (
+        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role VARCHAR(255) DEFAULT 'User',
+        full_name VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
+        phone VARCHAR(255),
+        status VARCHAR(255) DEFAULT 'Aktif',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
       CREATE TABLE users (
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         full_name VARCHAR(255) NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        phone VARCHAR(255),
+        username VARCHAR(255),
+        company_name VARCHAR(255),
+        company_address VARCHAR(255),
+        role VARCHAR(255) DEFAULT 'User',
+        status VARCHAR(255) DEFAULT 'Aktif'
       );
     `;
 
@@ -77,12 +98,22 @@ async function seedDatabase() {
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         tracking_number VARCHAR(255) NOT NULL UNIQUE,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        destination_id UUID NOT NULL REFERENCES shipping_rates(id) ON DELETE CASCADE,
+        destination_id UUID REFERENCES shipping_rates(id) ON DELETE CASCADE,
         weight_kg NUMERIC(20, 2) NOT NULL,
         total_cost NUMERIC(20, 2) NOT NULL,
         status VARCHAR(255) NOT NULL DEFAULT 'In Transit',
         vessel_id UUID REFERENCES vessels(id) ON DELETE SET NULL,
         est_arrival VARCHAR(255),
+        shipment_date DATE DEFAULT CURRENT_DATE,
+        sender_name VARCHAR(255),
+        receiver_name VARCHAR(255),
+        phone VARCHAR(255),
+        origin_city VARCHAR(255),
+        destination_city VARCHAR(255),
+        item_type VARCHAR(255),
+        vehicle_type VARCHAR(255),
+        shipment_type VARCHAR(255),
+        description TEXT,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -117,12 +148,25 @@ async function seedDatabase() {
 
     // 4. Seed data
     const hashedPass = await bcrypt.hash('123456', 10);
+    const hashedAdminPass = await bcrypt.hash('Admin123', 10);
+    const hashedUserPass = await bcrypt.hash('User123', 10);
+
+    // "user" table seeding
+    await sql`
+      INSERT INTO "user" (id, username, password, role, full_name, email, phone) VALUES
+      ('410544b2-4001-4271-9855-fec4b6a6442a', 'user', ${hashedUserPass}, 'User', 'Budi', 'user@seaparcel.com', '+62 812 3456 7890'),
+      ('99999999-9999-9999-9999-999999999999', 'admin', ${hashedAdminPass}, 'Admin', 'Admin Anagata', 'admin@seaparcel.com', '+62 21 1234 5678')
+      ON CONFLICT (id) DO NOTHING;
+    `;
 
     // Users
     await sql`
-      INSERT INTO users (id, full_name, email, password) VALUES
-      ('410544b2-4001-4271-9855-fec4b6a6442a', 'User One', 'user@seaparcel.com', ${hashedPass}),
-      ('99999999-9999-9999-9999-999999999999', 'Admin Account', 'admin@seaparcel.com', ${hashedPass})
+      INSERT INTO users (id, full_name, email, password, phone, username, company_name, company_address, role, status) VALUES
+      ('410544b2-4001-4271-9855-fec4b6a6442a', 'Budi', 'user@seaparcel.com', ${hashedUserPass}, '+62 812 3456 7890', 'user', 'PT. Example Corp', 'Surabaya, Indonesia', 'User', 'Aktif'),
+      ('99999999-9999-9999-9999-999999999999', 'Admin Anagata', 'admin@seaparcel.com', ${hashedAdminPass}, '+62 21 1234 5678', 'admin1', 'Anagata Oceanics', 'Jakarta, Indonesia', 'Admin', 'Aktif'),
+      ('22222222-2222-2222-2222-222222222223', 'John', 'john.doe@company.com', ${hashedPass}, '+62 813 9876 5432', 'johndoe', 'ABC Company', 'Solo, Indonesia', 'User', 'Aktif'),
+      ('33333333-3333-3333-3333-333333333334', 'saya', 'mantap@gmail.com', ${hashedPass}, '0821', 'saya', '-', '-', 'User', 'Aktif'),
+      ('44444444-4444-4444-4444-444444444445', 'adasd', 'blbla@gmail.com', ${hashedPass}, '123123', 'adasd', '-', '-', 'User', 'Aktif')
       ON CONFLICT (id) DO NOTHING;
     `;
 

@@ -2,10 +2,12 @@
 
 import postgres from 'postgres';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcrypt';
+import { createClient } from '@supabase/supabase-js';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
-// ================= INVOICE CRUD =================
+// ================= CRUD TAGIHAN / INVOICE =================
 
 export async function createInvoiceAction(
   customerId: string,
@@ -18,7 +20,7 @@ export async function createInvoiceAction(
     let nextNum = Number(countResult[0].count) + 1;
     let invoiceNumber = `INV-${String(nextNum).padStart(3, '0')}`;
 
-    // Avoid collision
+    // Hindari tabrakan nomor invoice
     while (true) {
       const existing = await sql`SELECT id FROM invoices_new WHERE invoice_number = ${invoiceNumber}`;
       if (existing.length === 0) break;
@@ -84,7 +86,7 @@ export async function deleteInvoiceAction(id: string) {
   }
 }
 
-// ================= VESSEL CRUD =================
+// ================= CRUD KAPAL / ARMADA =================
 
 export async function createVesselAction(
   vesselCode: string,
@@ -95,19 +97,20 @@ export async function createVesselAction(
   originPort: string,
   destinationPort: string,
   eta: string,
-  isActive: boolean
+  isActive: boolean,
+  capacityMuatan: string = '1000 Ton'
 ) {
   try {
     await sql.begin(async (sql: any) => {
-      // Insert vessel
+      // Simpan data kapal baru
       const insertedVessel = await sql`
-        INSERT INTO vessels (vessel_code, name, type, captain_name, status)
-        VALUES (${vesselCode}, ${name}, ${type}, ${captainName}, ${status})
+        INSERT INTO vessels (vessel_code, name, type, captain_name, status, capacity_muatan)
+        VALUES (${vesselCode}, ${name}, ${type}, ${captainName}, ${status}, ${capacityMuatan})
         RETURNING id
       `;
       const vesselId = insertedVessel[0].id;
       
-      // Insert voyage
+      // Simpan data pelayaran
       await sql`
         INSERT INTO voyages (vessel_id, origin_port, destination_port, eta, is_active)
         VALUES (${vesselId}, ${originPort}, ${destinationPort}, ${eta}, ${isActive})
@@ -132,18 +135,19 @@ export async function updateVesselAction(
   originPort: string,
   destinationPort: string,
   eta: string,
-  isActive: boolean
+  isActive: boolean,
+  capacityMuatan: string = '1000 Ton'
 ) {
   try {
     await sql.begin(async (sql: any) => {
-      // Update vessel
+      // Perbarui data kapal
       await sql`
         UPDATE vessels
-        SET vessel_code = ${vesselCode}, name = ${name}, type = ${type}, captain_name = ${captainName}, status = ${status}
+        SET vessel_code = ${vesselCode}, name = ${name}, type = ${type}, captain_name = ${captainName}, status = ${status}, capacity_muatan = ${capacityMuatan}
         WHERE id = ${id}
       `;
       
-      // Update or insert voyage
+      // Perbarui atau simpan data pelayaran
       const existingVoyage = await sql`SELECT vessel_id FROM voyages WHERE vessel_id = ${id}`;
       if (existingVoyage.length > 0) {
         await sql`
@@ -182,7 +186,7 @@ export async function deleteVesselAction(id: string) {
   }
 }
 
-// ================= USER OPERATIONS =================
+// ================= OPERASI PENGGUNA =================
 
 export async function trackShipmentAction(trackingNumber: string) {
   try {
@@ -232,7 +236,7 @@ export async function trackShipmentAction(trackingNumber: string) {
 
 export async function fetchUserInvoicesAction(userEmail: string) {
   try {
-    // Find user by email
+    // Cari pengguna berdasarkan email
     const users = await sql`SELECT id FROM users WHERE email = ${userEmail}`;
     if (users.length === 0) {
       return { success: false, error: 'User not found' };
@@ -280,5 +284,308 @@ export async function fetchShippingRatesAction() {
   } catch (err) {
     console.error('Error fetching shipping rates:', err);
     return { success: false, error: 'Failed to fetch shipping rates.' };
+  }
+}
+
+export async function registerUserAction(fullName: string, email: string, phone: string, passwordPlain: string) {
+  try {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+
+    // 1. Periksa apakah email pengguna sudah terdaftar di database
+    const existing = await sql`SELECT id FROM users WHERE email = ${trimmedEmail}`;
+    if (existing.length > 0) {
+      return { success: false, error: 'Email sudah terdaftar.' };
+    }
+
+    // 2. Buat akun di sistem auth Supabase dengan konfirmasi email otomatis
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: trimmedEmail,
+      password: passwordPlain,
+      email_confirm: true
+    });
+
+    if (authError) {
+      console.error('Supabase Auth error during registration:', authError);
+      return { success: false, error: authError.message };
+    }
+
+    // 3. Enkripsi password menggunakan bcrypt dan simpan data ke tabel pengguna
+    const hashedPass = await bcrypt.hash(passwordPlain, 10);
+    const userId = authData.user?.id;
+    if (!userId) {
+      return { success: false, error: 'Gagal mendapatkan ID User dari sistem auth.' };
+    }
+
+    await sql`
+      INSERT INTO users (id, full_name, email, password, phone)
+      VALUES (${userId}, ${fullName}, ${trimmedEmail}, ${hashedPass}, ${trimmedPhone})
+    `;
+
+    await sql`
+      INSERT INTO "user" (id, username, password, role, full_name, email, phone)
+      VALUES (${userId}, ${trimmedEmail}, ${hashedPass}, 'User', ${fullName}, ${trimmedEmail}, ${trimmedPhone})
+    `;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to register user:', error);
+    return { success: false, error: error.message || 'Gagal mendaftarkan akun.' };
+  }
+}
+
+export async function loginUserAction(usernamePlain: string, passwordPlain: string, role: 'user' | 'admin') {
+  try {
+    const normalizedUsername = usernamePlain.trim().toLowerCase();
+    const result = await sql`
+      SELECT * FROM "user" 
+      WHERE username = ${normalizedUsername} OR email = ${normalizedUsername}
+    `;
+    if (result.length === 0) {
+      return { success: false, error: 'Akses ditolak! Periksa kembali kredensial Anda.' };
+    }
+    const user = result[0];
+    const passwordMatch = await bcrypt.compare(passwordPlain, user.password);
+    if (!passwordMatch) {
+      return { success: false, error: 'Akses ditolak! Periksa kembali kredensial Anda.' };
+    }
+    const normalizedRole = role.toLowerCase();
+    const userRole = (user.role || '').toLowerCase();
+    if (normalizedRole === 'admin') {
+      if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'operator') {
+        return { success: false, error: 'Akses ditolak! Akun Anda tidak memiliki role Admin/Supervisor/Operator.' };
+      }
+    } else {
+      if (userRole !== 'user') {
+        return { success: false, error: 'Silakan gunakan tab ADMIN untuk masuk ke sistem manajemen.' };
+      }
+    }
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        email: user.email,
+        fullName: user.full_name || user.username,
+        phone: user.phone || ''
+      }
+    };
+  } catch (error: any) {
+    console.error('Login action error:', error);
+    return { success: false, error: error.message || 'Terjadi kesalahan saat masuk.' };
+  }
+}
+
+export async function fetchUsersAction(includeAdmin: boolean = true) {
+  try {
+    let users;
+    if (includeAdmin) {
+      users = await sql`
+        SELECT id, full_name, email, phone, username, company_name, company_address, role, status 
+        FROM "user" 
+        ORDER BY full_name ASC
+      `;
+    } else {
+      users = await sql`
+        SELECT id, full_name, email, phone, username, company_name, company_address, role, status 
+        FROM "user" 
+        WHERE email != 'admin@seaparcel.com'
+        ORDER BY full_name ASC
+      `;
+    }
+    return { success: true, data: users };
+  } catch (error: any) {
+    console.error('Failed to fetch users:', error);
+    return { success: false, error: error.message || 'Failed to fetch users.' };
+  }
+}
+
+export async function fetchShipmentsAction() {
+  try {
+    const shipments = await sql`
+      SELECT s.*, u.full_name as user_name, u.email as user_email
+      FROM shipments s
+      JOIN users u ON s.user_id = u.id
+      ORDER BY s.created_at DESC
+    `;
+    return { success: true, data: shipments };
+  } catch (error: any) {
+    console.error('Failed to fetch shipments:', error);
+    return { success: false, error: error.message || 'Failed to fetch shipments.' };
+  }
+}
+
+export async function createShipmentAction(formData: {
+  userId: string;
+  senderName: string;
+  receiverName: string;
+  phone: string;
+  originCity: string;
+  destinationCity: string;
+  itemType: string;
+  weightKg: number;
+  totalCost: number;
+  vehicleType: string;
+  shipmentType: string;
+  status: string;
+  description: string;
+  shipmentDate: string;
+  statusBarang?: string;
+  statusTransaksi?: string;
+}) {
+  try {
+    let trackingNumber = '';
+    while (true) {
+      const randNum = Math.floor(1000000000 + Math.random() * 9000000000);
+      trackingNumber = `SP-${randNum}`;
+      const existing = await sql`SELECT id FROM shipments WHERE tracking_number = ${trackingNumber}`;
+      if (existing.length === 0) break;
+    }
+
+    const {
+      userId,
+      senderName,
+      receiverName,
+      phone,
+      originCity,
+      destinationCity,
+      itemType,
+      weightKg,
+      totalCost,
+      vehicleType,
+      shipmentType,
+      status,
+      description,
+      shipmentDate,
+      statusBarang,
+      statusTransaksi
+    } = formData;
+
+    await sql`
+      INSERT INTO shipments (
+        tracking_number,
+        user_id,
+        sender_name,
+        receiver_name,
+        phone,
+        origin_city,
+        destination_city,
+        item_type,
+        weight_kg,
+        total_cost,
+        vehicle_type,
+        shipment_type,
+        status,
+        description,
+        shipment_date,
+        status_barang,
+        status_transaksi
+      ) VALUES (
+        ${trackingNumber},
+        ${userId},
+        ${senderName},
+        ${receiverName},
+        ${phone},
+        ${originCity},
+        ${destinationCity},
+        ${itemType},
+        ${weightKg},
+        ${totalCost},
+        ${vehicleType},
+        ${shipmentType},
+        ${status || 'Diproses'},
+        ${description},
+        ${shipmentDate || new Date().toISOString().split('T')[0]},
+        ${statusBarang || 'Diproses'},
+        ${statusTransaksi || 'Diproses'}
+      )
+    `;
+
+    const newShipment = await sql`SELECT id FROM shipments WHERE tracking_number = ${trackingNumber}`;
+    const shipmentId = newShipment[0].id;
+    
+    await sql`
+      INSERT INTO shipment_steps_new (shipment_id, status, location, step_date, completed, step_order)
+      VALUES (
+        ${shipmentId},
+        ${status || 'Diproses'},
+        ${originCity || 'Origin Port'},
+        ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })},
+        true,
+        1
+      )
+    `;
+
+    revalidatePath('/dashboard/shipments');
+    return { success: true, trackingNumber };
+  } catch (error: any) {
+    console.error('Failed to create shipment:', error);
+    return { success: false, error: error.message || 'Failed to create shipment.' };
+  }
+}
+
+export async function updateShipmentStatusAction(id: string, status: string) {
+  try {
+    await sql`
+      UPDATE shipments
+      SET status = ${status}
+      WHERE id = ${id}
+    `;
+    revalidatePath('/dashboard/shipments');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to update shipment status:', error);
+    return { success: false, error: error.message || 'Failed to update status.' };
+  }
+}
+
+export async function updateShipmentDetailsAction(
+  id: string,
+  data: {
+    status: string;
+    status_barang: string;
+    status_transaksi: string;
+    total_cost: number;
+  }
+) {
+  try {
+    await sql`
+      UPDATE shipments
+      SET 
+        status = ${data.status},
+        status_barang = ${data.status_barang},
+        status_transaksi = ${data.status_transaksi},
+        total_cost = ${data.total_cost}
+      WHERE id = ${id}
+    `;
+    revalidatePath('/dashboard/shipments');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to update shipment details:', error);
+    return { success: false, error: error.message || 'Gagal memperbarui data pengiriman.' };
+  }
+}
+
+export async function deleteShipmentAction(id: string) {
+  try {
+    await sql`
+      DELETE FROM shipments
+      WHERE id = ${id}
+    `;
+    revalidatePath('/dashboard/shipments');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to delete shipment:', error);
+    return { success: false, error: error.message || 'Failed to delete shipment.' };
   }
 }
