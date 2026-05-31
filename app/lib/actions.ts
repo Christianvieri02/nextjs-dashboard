@@ -589,3 +589,83 @@ export async function deleteShipmentAction(id: string) {
     return { success: false, error: error.message || 'Failed to delete shipment.' };
   }
 }
+
+export async function updateUserAction(
+  id: string,
+  fullName: string,
+  email: string,
+  phone: string,
+  companyName: string = '-',
+  companyAddress: string = '-',
+  role: string = 'User',
+  status: string = 'Aktif'
+) {
+  try {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+    
+    await sql.begin(async (sql: any) => {
+      // Update in users table
+      await sql`
+        UPDATE users
+        SET 
+          full_name = ${fullName},
+          email = ${trimmedEmail},
+          phone = ${trimmedPhone},
+          username = ${trimmedEmail},
+          company_name = ${companyName},
+          company_address = ${companyAddress},
+          role = ${role},
+          status = ${status}
+        WHERE id = ${id}
+      `;
+
+      // Update in "user" table
+      await sql`
+        UPDATE "user"
+        SET 
+          full_name = ${fullName},
+          email = ${trimmedEmail},
+          phone = ${trimmedPhone},
+          username = ${trimmedEmail},
+          role = ${role},
+          status = ${status}
+        WHERE id = ${id}
+      `;
+    });
+
+    revalidatePath('/dashboard/users');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to update user:', error);
+    return { success: false, error: error.message || 'Failed to update user.' };
+  }
+}
+
+export async function deleteUserAction(id: string, currentUserId?: string) {
+  try {
+    if (currentUserId && id === currentUserId) {
+      return { success: false, error: 'Tidak dapat menghapus diri sendiri.' };
+    }
+
+    await sql.begin(async (sql: any) => {
+      // Delete from "user"
+      await sql`
+        DELETE FROM "user"
+        WHERE id = ${id}
+      `;
+
+      // Delete from users (this will cascade delete shipments and invoices_new)
+      await sql`
+        DELETE FROM users
+        WHERE id = ${id}
+      `;
+    });
+
+    revalidatePath('/dashboard/users');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to delete user:', error);
+    return { success: false, error: error.message || 'Failed to delete user.' };
+  }
+}

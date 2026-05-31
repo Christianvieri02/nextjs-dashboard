@@ -41,7 +41,7 @@ export default function DashboardLayoutClient({
       const sess = JSON.parse(sessionStr);
       const role = (sess.role || '').toLowerCase();
       if (role !== 'admin' && role !== 'supervisor' && role !== 'operator') {
-        router.push('/user'); // Redirect normal user to tracking portal
+        router.push('/user'); 
         return;
       }
       setAdminName(sess.fullName || sess.username || 'Admin');
@@ -65,10 +65,8 @@ export default function DashboardLayoutClient({
           <span className="text-lg font-bold text-white tracking-widest uppercase">Sea Parcel</span>
         </div>
         
-        {/* Navigation Bar with Hoverable Mega Menus */}
         <nav className="hidden md:flex items-center gap-8 h-full">
           
-          {/* 1. HOME DROPDOWN */}
           <div className="relative h-full flex items-center group">
             <button 
               suppressHydrationWarning
@@ -85,7 +83,6 @@ export default function DashboardLayoutClient({
               )}
             </button>
             
-            {/* Dropdown Card */}
             <div className="absolute top-[80%] left-1/2 -translate-x-1/2 w-[280px] bg-[#121622]/98 border border-gray-800/80 rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] p-2.5 hidden group-hover:block z-50 border-t-2 border-t-[#D977F9] backdrop-blur-md">
               <div className="space-y-0.5">
                 <Link href="/dashboard" className="flex items-center gap-3.5 hover:bg-[#1E2335] p-2.5 rounded-lg transition-all duration-200 group/item text-left">
@@ -139,7 +136,6 @@ export default function DashboardLayoutClient({
             </div>
           </div>
 
-          {/* 2. FLEET DROPDOWN */}
           <div className="relative h-full flex items-center group">
             <button 
               suppressHydrationWarning
@@ -155,8 +151,7 @@ export default function DashboardLayoutClient({
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00E5FF] rounded-full shadow-[0_0_8px_#00E5FF]"></span>
               )}
             </button>
-            
-            {/* Dropdown Card */}
+
             <div className="absolute top-[80%] left-1/2 -translate-x-1/2 w-[280px] bg-[#121622]/98 border border-gray-800/80 rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] p-2.5 hidden group-hover:block z-50 border-t-2 border-t-[#00E5FF] backdrop-blur-md">
               <div className="space-y-0.5">
                 <Link href="/dashboard/fleet" className="flex items-center gap-3.5 hover:bg-[#1E2335] p-2.5 rounded-lg transition-all duration-200 group/item text-left">
@@ -186,7 +181,6 @@ export default function DashboardLayoutClient({
             </div>
           </div>
 
-          {/* 3. INVOICES DROPDOWN (Includes billing invoice and Kelola Pengguna links) */}
           <div className="relative h-full flex items-center group">
             <button 
               suppressHydrationWarning
@@ -203,7 +197,6 @@ export default function DashboardLayoutClient({
               )}
             </button>
             
-            {/* Dropdown Card */}
             <div className="absolute top-[80%] right-0 w-[280px] bg-[#121622]/98 border border-gray-800/80 rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] p-2.5 hidden group-hover:block z-50 border-t-2 border-t-[#8B5CF6] backdrop-blur-md">
               <div className="space-y-0.5">
                 <Link href="/dashboard/invoices" className="flex items-center gap-3.5 hover:bg-[#1E2335] p-2.5 rounded-lg transition-all duration-200 group/item text-left">
@@ -235,7 +228,6 @@ export default function DashboardLayoutClient({
 
         </nav>
 
-        {/* User Info Bar */}
         <div className="flex items-center gap-6">
           <button 
             suppressHydrationWarning

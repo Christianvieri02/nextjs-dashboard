@@ -73,7 +73,7 @@ export default function UserDashboard() {
         <p className="text-gray-400 text-sm">Enter your tracking number to view shipment status</p>
       </div>
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-8">
         <div className="relative flex-1">
           <span className="absolute left-4 top-4 text-gray-500">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,7 +87,7 @@ export default function UserDashboard() {
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleTrack()}
-            placeholder="Enter tracking number (e.g. OL2026041301)" 
+            placeholder="Enter tracking number" 
             className="w-full bg-[#1A1C24] border border-transparent text-white text-sm p-4 pl-12 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
           />
         </div>
@@ -101,14 +101,6 @@ export default function UserDashboard() {
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
-      </div>
-
-      <div className="text-[11px] text-gray-400 mb-12">
-        Try these sample tracking numbers: &nbsp;
-        <button onClick={() => handleSampleClick('OL2026041301')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041301</button> &nbsp;|&nbsp; 
-        <button onClick={() => handleSampleClick('OL2026041302')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041302</button> &nbsp;|&nbsp; 
-        <button onClick={() => handleSampleClick('OL2026041303')} className="text-[#D977F9] hover:underline underline-offset-2">OL2026041303</button> &nbsp;|&nbsp; 
-        <button onClick={() => handleSampleClick('VS010')} className="text-[#D977F9] hover:underline underline-offset-2">VS010</button>
       </div>
 
       {errorMsg && (
