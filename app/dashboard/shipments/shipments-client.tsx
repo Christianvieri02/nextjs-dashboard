@@ -94,10 +94,11 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
   const [editStatus, setEditStatus] = useState('Diproses');
   const [editStatusBarang, setEditStatusBarang] = useState('Diproses');
   const [editStatusTransaksi, setEditStatusTransaksi] = useState('Diproses');
-  const [editTotalCost, setEditTotalCost] = useState<number>(0);
+  const [editTotalCost, setEditTotalCost] = useState<number | string>(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
 
   useEffect(() => {
     setShipments(initialShipments);
@@ -155,6 +156,10 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
   const handleEditShipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingShipmentId) return;
+    if (editTotalCost === '') {
+      setErrorMsg('Harga/Tarif Pengiriman tidak boleh kosong.');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMsg('');
@@ -214,11 +219,13 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
     setStatusTransaksi('Diproses');
     setDescription('');
     setErrorMsg('');
+    setShowCreateErrors(false);
   };
 
   const handleCreateShipment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId || !senderName || !receiverName || !phone || !originCity || !destinationCity || !itemType) {
+    setShowCreateErrors(true);
+    if (!userId || !senderName || !receiverName || !phone || !originCity || !destinationCity || !itemType || !shipmentDate || !weightKg || weightKg <= 0) {
       setErrorMsg('Harap lengkapi semua kolom yang wajib diisi (*).');
       return;
     }
@@ -444,22 +451,25 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
               </button>
             </div>
             
-            <form onSubmit={handleCreateShipment} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form noValidate onSubmit={handleCreateShipment} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {errorMsg && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3.5 rounded text-xs text-center font-bold">
                   {errorMsg}
                 </div>
               )}
-
+              
               {/* User Selection & Date */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Akun Pengguna (Database) *</label>
                   <select
-                    required
                     value={userId}
                     onChange={(e) => setUserId(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !userId
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   >
                     {users.map((user) => (
                       <option key={user.id} value={user.id}>
@@ -471,11 +481,14 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Tanggal Kirim *</label>
                   <input
-                    required
                     type="date"
                     value={shipmentDate}
                     onChange={(e) => setShipmentDate(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !shipmentDate
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -485,23 +498,29 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Nama Pengirim *</label>
                   <input
-                    required
                     type="text"
                     placeholder="Nama Pengirim"
                     value={senderName}
                     onChange={(e) => setSenderName(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !senderName
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Nama Penerima *</label>
                   <input
-                    required
                     type="text"
                     placeholder="Nama Penerima"
                     value={receiverName}
                     onChange={(e) => setReceiverName(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !receiverName
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -511,12 +530,15 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">No Telepon Penerima *</label>
                   <input
-                    required
                     type="text"
                     placeholder="Contoh: 0812xxxxxxxx"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !phone
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
@@ -539,23 +561,29 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kota Asal *</label>
                   <input
-                    required
                     type="text"
                     placeholder="Pelabuhan Asal / Kota Asal"
                     value={originCity}
                     onChange={(e) => setOriginCity(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !originCity
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kota Tujuan *</label>
                   <input
-                    required
                     type="text"
                     placeholder="Pelabuhan Tujuan / Kota Tujuan"
                     value={destinationCity}
                     onChange={(e) => setDestinationCity(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !destinationCity
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -565,24 +593,30 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Jenis Barang *</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. Sparepart, Tekstil, Elektronik"
                     value={itemType}
                     onChange={(e) => setItemType(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !itemType
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Berat Barang (kg) *</label>
                   <input
-                    required
                     type="number"
                     min="0.1"
                     step="any"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    value={weightKg || ''}
+                    onChange={(e) => setWeightKg(e.target.value ? Number(e.target.value) : 0)}
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && (!weightKg || weightKg <= 0)
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -739,7 +773,7 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
               </button>
             </div>
             
-            <form onSubmit={handleEditShipment} className="p-6 space-y-4">
+            <form noValidate onSubmit={handleEditShipment} className="p-6 space-y-4">
               {errorMsg && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3.5 rounded text-xs text-center font-bold">
                   {errorMsg}
@@ -795,10 +829,19 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Harga/Tarif Pengiriman (Rp) *</label>
                 <input
                   required
-                  type="number"
+                  type="text"
                   value={editTotalCost}
-                  onChange={(e) => setEditTotalCost(Number(e.target.value))}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*$/.test(val)) {
+                      setEditTotalCost(val);
+                    }
+                  }}
+                  className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                    editTotalCost === ''
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                  }`}
                 />
               </div>
 
@@ -817,7 +860,7 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || editTotalCost === ''}
                   className="px-4 py-2 bg-[#D977F9] hover:bg-[#c75be9] text-[#250F2D] font-bold rounded text-xs transition disabled:opacity-50"
                 >
                   {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}

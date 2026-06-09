@@ -44,6 +44,8 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const [showEditErrors, setShowEditErrors] = useState(false);
 
   const filteredInvoices = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -79,10 +81,15 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
     setStatusInput('paid');
     setDateInput(new Date().toISOString().split('T')[0]);
     setEditingInvoiceId(null);
+    setShowCreateErrors(false);
+    setShowEditErrors(false);
   };
 
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowCreateErrors(true);
+    if (!amountInput || parseFloat(amountInput) < 0.01 || !dateInput) return;
+
     const customer = customers.find((c) => c.id === selectedCustomerId);
     if (!customer) return;
 
@@ -111,6 +118,8 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
   const handleEditInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingInvoiceId) return;
+    setShowEditErrors(true);
+    if (!amountInput || parseFloat(amountInput) < 0.01 || !dateInput) return;
 
     const customer = customers.find((c) => c.id === selectedCustomerId);
     if (!customer) return;
@@ -174,6 +183,7 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
         <button
           onClick={() => {
             resetForm();
+            setShowCreateErrors(false);
             setIsCreateOpen(true);
           }}
           className="w-full sm:w-auto bg-[#A855F7] hover:bg-[#9333EA] text-white px-5 py-2.5 rounded-md text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.35)] active:scale-[0.98] transition-all"
@@ -349,7 +359,7 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
               </button>
             </div>
             
-            <form onSubmit={handleCreateInvoice} className="p-6 space-y-4">
+            <form noValidate onSubmit={handleCreateInvoice} className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Select Customer</label>
                 <select
@@ -366,27 +376,36 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
               </div>
 
               <div>
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Amount (USD)</label>
+                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Amount (USD) *</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0.01"
-                  required
                   placeholder="e.g. 448.00"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                    showCreateErrors && (!amountInput || parseFloat(amountInput) < 0.01)
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                  }`}
                 />
+                {showCreateErrors && (!amountInput || parseFloat(amountInput) < 0.01) && (
+                  <p className="text-[10px] text-red-500 mt-1.5 font-bold">Angka minimal 0.01</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Invoice Date</label>
+                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Invoice Date *</label>
                 <input
                   type="date"
-                  required
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                    showCreateErrors && !dateInput
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                  }`}
                 />
               </div>
 
@@ -453,7 +472,7 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
               </button>
             </div>
             
-            <form onSubmit={handleEditInvoice} className="p-6 space-y-4">
+            <form noValidate onSubmit={handleEditInvoice} className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Select Customer</label>
                 <select
@@ -470,27 +489,36 @@ export default function InvoicesClient({ initialInvoices, customers }: InvoicesC
               </div>
 
               <div>
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Amount (USD)</label>
+                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Amount (USD) *</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0.01"
-                  required
                   placeholder="e.g. 448.00"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                    showEditErrors && (!amountInput || parseFloat(amountInput) < 0.01)
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                  }`}
                 />
+                {showEditErrors && (!amountInput || parseFloat(amountInput) < 0.01) && (
+                  <p className="text-[10px] text-red-500 mt-1.5 font-bold">Angka minimal 0.01</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Invoice Date</label>
+                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Invoice Date *</label>
                 <input
                   type="date"
-                  required
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
-                  className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                  className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                    showEditErrors && !dateInput
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                  }`}
                 />
               </div>
 

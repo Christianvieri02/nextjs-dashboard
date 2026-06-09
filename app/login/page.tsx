@@ -27,6 +27,8 @@ export default function LoginPage() {
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showLoginErrors, setShowLoginErrors] = useState(false);
+  const [showRegisterErrors, setShowRegisterErrors] = useState(false);
   
   // Router untuk berpindah halaman
   const router = useRouter();
@@ -39,6 +41,11 @@ export default function LoginPage() {
   // Fungsi saat tombol login ditekan
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); 
+    setShowLoginErrors(true);
+    if (!username || !password) {
+      setErrorMsg('Username dan Password wajib diisi.');
+      return;
+    }
     setIsLoading(true);
     setErrorMsg(''); 
     setSuccessMsg('');
@@ -75,28 +82,22 @@ export default function LoginPage() {
   // Fungsi saat tombol registrasi ditekan
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setShowRegisterErrors(true);
 
     const trimmedEmail = regEmail.trim();
     const trimmedPhone = regPhone.trim();
 
-    if (!trimmedEmail) {
-      setErrorMsg('Email tidak boleh kosong.');
-      setIsLoading(false);
-      return;
-    }
-    if (!trimmedPhone) {
-      setErrorMsg('Nomor telepon tidak boleh kosong.');
-      setIsLoading(false);
+    if (!fullName || !trimmedEmail || !trimmedPhone || !regPassword || !regConfirmPassword) {
+      setErrorMsg('Harap lengkapi semua kolom.');
       return;
     }
     if (regPassword !== regConfirmPassword) {
       setErrorMsg('Password dan Konfirmasi Password tidak cocok.');
-      setIsLoading(false);
       return;
     }
+    setIsLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     try {
       const res = await registerUserAction(fullName, trimmedEmail, trimmedPhone, regPassword);
@@ -113,6 +114,7 @@ export default function LoginPage() {
         setRegPhone('');
         setRegPassword('');
         setRegConfirmPassword('');
+        setShowRegisterErrors(false);
       } else {
         setErrorMsg(res.error || 'Gagal mendaftarkan akun.');
       }
@@ -159,7 +161,7 @@ export default function LoginPage() {
                 <p className="text-gray-500 text-[10px] tracking-wide mt-1">DAFTAR UNTUK MENGAKSES PORTAL SEA PARCEL</p>
               </div>
 
-              <form onSubmit={handleRegister} className="space-y-6">
+              <form noValidate onSubmit={handleRegister} className="space-y-6">
                 {errorMsg && (
                   <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-xs p-3 rounded text-center font-semibold">
                     {errorMsg}
@@ -173,12 +175,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">✍️</span>
                     <input 
-                      required 
                       type="text" 
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="NAMA LENGKAP ANDA" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showRegisterErrors && !fullName
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -190,12 +195,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">✉️</span>
                     <input 
-                      required 
                       type="email" 
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder="ALAMAT EMAIL ANDA" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showRegisterErrors && !regEmail
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -207,12 +215,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">📞</span>
                     <input 
-                      required 
                       type="tel" 
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       placeholder="NOMOR TELEPON AKTIF" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showRegisterErrors && !regPhone
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -224,12 +235,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">🔒</span>
                     <input 
-                      required 
                       type="password" 
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showRegisterErrors && !regPassword
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -241,12 +255,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">🔒</span>
                     <input 
-                      required 
                       type="password" 
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showRegisterErrors && !regConfirmPassword
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -270,6 +287,8 @@ export default function LoginPage() {
                       setIsRegistering(false);
                       setErrorMsg('');
                       setSuccessMsg('');
+                      setShowRegisterErrors(false);
+                      setShowLoginErrors(false);
                     }}
                     className="text-gray-500 hover:text-[#D977F9] text-[10px] font-bold tracking-widest uppercase"
                   >
@@ -284,21 +303,27 @@ export default function LoginPage() {
               <div className="flex mb-8 rounded bg-black overflow-hidden border border-gray-800">
                 <button 
                   type="button"
-                  onClick={() => setActiveTab('user')}
+                  onClick={() => {
+                    setActiveTab('user');
+                    setShowLoginErrors(false);
+                  }}
                   className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'user' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                   USER
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setActiveTab('admin')}
+                  onClick={() => {
+                    setActiveTab('admin');
+                    setShowLoginErrors(false);
+                  }}
                   className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${activeTab === 'admin' ? 'bg-[#D977F9] text-[#250F2D]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                   ADMIN
                 </button>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form noValidate onSubmit={handleLogin} className="space-y-6">
                 
                 {successMsg && (
                   <div className="bg-green-500/10 border border-green-500/50 text-green-400 text-xs p-3 rounded text-center font-semibold">
@@ -319,12 +344,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">👤</span>
                     <input 
-                      required 
                       type="text" 
-                      value={username} /* <-- INI WAJIB ADA */
-                      onChange={(e) => setUsername(e.target.value)} /* <-- INI WAJIB ADA */
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       placeholder={activeTab === 'admin' ? "ENTER ADMIN ID" : "USERNAME OR EMAIL"} 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showLoginErrors && !username
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -337,12 +365,15 @@ export default function LoginPage() {
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-500">🔒</span>
                     <input 
-                      required 
                       type="password" 
-                      value={password} /* <-- INI WAJIB ADA */
-                      onChange={(e) => setPassword(e.target.value)} /* <-- INI WAJIB ADA */
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="w-full bg-[#1A1C24] border border-transparent text-white text-xs p-4 pl-10 rounded focus:border-[#D977F9] focus:outline-none placeholder-gray-600 transition" 
+                      className={`w-full bg-[#1A1C24] border text-white text-xs p-4 pl-10 rounded focus:outline-none placeholder-gray-600 transition ${
+                        showLoginErrors && !password
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-transparent focus:border-[#D977F9]'
+                      }`} 
                     />
                   </div>
                 </div>

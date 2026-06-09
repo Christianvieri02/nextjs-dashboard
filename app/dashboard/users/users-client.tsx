@@ -47,6 +47,8 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
   const [editErrorMsg, setEditErrorMsg] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [showAddErrors, setShowAddErrors] = useState(false);
+  const [showEditErrors, setShowEditErrors] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null);
 
@@ -101,6 +103,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
     setEditCompanyAddress(user.company_address || '-');
     setEditErrorMsg('');
     setEditSuccessMsg('');
+    setShowEditErrors(false);
     setIsEditModalOpen(true);
   };
 
@@ -112,6 +115,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
 
     if (!editingUser) return;
 
+    setShowEditErrors(true);
     if (!editFullName || !editEmail || !editPhone) {
       setEditErrorMsg('Nama, Email, dan Telepon harus diisi.');
       setIsEditSubmitting(false);
@@ -152,7 +156,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
-    setIsSubmitting(true);
+    setShowAddErrors(true);
 
     if (!fullName || !email || !phone || !password) {
       setErrorMsg('Semua kolom harus diisi.');
@@ -174,6 +178,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
         setTimeout(() => {
           setIsModalOpen(false);
           setSuccessMsg('');
+          setShowAddErrors(false);
         }, 1500);
       } else {
         setErrorMsg(res.error || 'Gagal menambahkan user.');
@@ -205,7 +210,16 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
         
         <button
           suppressHydrationWarning
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setFullName('');
+            setEmail('');
+            setPhone('');
+            setPassword('');
+            setErrorMsg('');
+            setSuccessMsg('');
+            setShowAddErrors(false);
+            setIsModalOpen(true);
+          }}
           className="bg-gradient-to-r from-[#7C3AED] to-[#D977F9] hover:opacity-90 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-[0_0_12px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-1.5 self-start md:self-auto"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -363,7 +377,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
               </button>
             </div>
 
-            <form onSubmit={handleAddUser} className="p-5 space-y-4">
+            <form noValidate onSubmit={handleAddUser} className="p-5 space-y-4">
               {errorMsg && (
                 <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-3 rounded-lg flex items-center gap-2">
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -388,8 +402,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Contoh: John Doe"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showAddErrors && !fullName
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -400,8 +417,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Contoh: john@example.com"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showAddErrors && !email
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -412,8 +432,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Contoh: +62 813 9876 5432"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showAddErrors && !phone
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -424,8 +447,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password minimal 6 karakter"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showAddErrors && !password
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -478,7 +504,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form noValidate onSubmit={handleEditSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
               {editErrorMsg && (
                 <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-3 rounded-lg flex items-center gap-2">
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -503,8 +529,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
                   placeholder="Contoh: John Doe"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showEditErrors && !editFullName
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -515,8 +544,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   placeholder="Contoh: john@example.com"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showEditErrors && !editEmail
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 
@@ -527,8 +559,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   placeholder="Contoh: +62 813 9876 5432"
-                  className="w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border border-gray-800 focus:outline-none focus:border-[#7C3AED]/70 transition-all"
-                  required
+                  className={`w-full bg-[#121622] text-xs text-white placeholder-gray-600 p-3 rounded-lg border focus:outline-none transition-all ${
+                    showEditErrors && !editPhone
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                      : 'border-gray-800 focus:border-[#7C3AED]/70 focus:ring-1 focus:ring-[#7C3AED]/30'
+                  }`}
                 />
               </div>
 

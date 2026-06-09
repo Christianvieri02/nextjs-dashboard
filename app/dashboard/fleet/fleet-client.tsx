@@ -83,6 +83,8 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
   const [etaInput, setEtaInput] = useState(new Date().toISOString().split('T')[0] + 'T12:00');
   const [isActiveInput, setIsActiveInput] = useState(true);
   const [capacityMuatanInput, setCapacityMuatanInput] = useState('1000 Ton');
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const [showEditErrors, setShowEditErrors] = useState(false);
   
   const [editingVesselId, setEditingVesselId] = useState<string | null>(null);
   const [deletingVesselId, setDeletingVesselId] = useState<string | null>(null);
@@ -113,11 +115,14 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
     setIsActiveInput(true);
     setCapacityMuatanInput('1000 Ton');
     setEditingVesselId(null);
+    setShowCreateErrors(false);
+    setShowEditErrors(false);
   };
 
   const handleCreateVessel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vesselCodeInput || !nameInput || !captainInput) {
+    setShowCreateErrors(true);
+    if (!vesselCodeInput || !nameInput || !captainInput || !capacityMuatanInput) {
       alert('Please fill out all required fields.');
       return;
     }
@@ -171,6 +176,11 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
   const handleEditVessel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVesselId) return;
+    setShowEditErrors(true);
+    if (!vesselCodeInput || !nameInput || !captainInput || !capacityMuatanInput) {
+      alert('Please fill out all required fields.');
+      return;
+    }
 
     const res = await updateVesselAction(
       editingVesselId,
@@ -224,6 +234,7 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
         <button
           onClick={() => {
             resetForm();
+            setShowCreateErrors(false);
             setIsCreateOpen(true);
           }}
           className="bg-[#A855F7] hover:bg-[#9333EA] text-white px-5 py-2.5 rounded-md text-xs font-semibold tracking-wide flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.35)] active:scale-[0.98] transition-all"
@@ -383,28 +394,34 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
               </button>
             </div>
             
-            <form onSubmit={handleCreateVessel} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form noValidate onSubmit={handleCreateVessel} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Code *</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. V006"
                     value={vesselCodeInput}
                     onChange={(e) => setVesselCodeInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !vesselCodeInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Name *</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. RED DRAGON"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !nameInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -426,12 +443,15 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Captain Name *</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. Capt. Sarah Connor"
                     value={captainInput}
                     onChange={(e) => setCaptainInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !captainInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -455,12 +475,15 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kapasitas Muatan *</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. 1000 Ton"
                     value={capacityMuatanInput}
                     onChange={(e) => setCapacityMuatanInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showCreateErrors && !capacityMuatanInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -550,26 +573,32 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
               </button>
             </div>
             
-            <form onSubmit={handleEditVessel} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form noValidate onSubmit={handleEditVessel} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Code *</label>
                   <input
-                    required
                     type="text"
                     value={vesselCodeInput}
                     onChange={(e) => setVesselCodeInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showEditErrors && !vesselCodeInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Vessel Name *</label>
                   <input
-                    required
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showEditErrors && !nameInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -591,11 +620,14 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Captain Name *</label>
                   <input
-                    required
                     type="text"
                     value={captainInput}
                     onChange={(e) => setCaptainInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showEditErrors && !captainInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
@@ -619,11 +651,14 @@ export default function FleetClient({ initialVessels }: FleetClientProps) {
                 <div>
                   <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-2">Kapasitas Muatan *</label>
                   <input
-                    required
                     type="text"
                     value={capacityMuatanInput}
                     onChange={(e) => setCapacityMuatanInput(e.target.value)}
-                    className="w-full bg-[#1A1C24] border border-gray-800 rounded p-3 text-xs text-white focus:outline-none focus:border-[#D977F9] transition"
+                    className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
+                      showEditErrors && !capacityMuatanInput
+                        ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
+                        : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
+                    }`}
                   />
                 </div>
               </div>
