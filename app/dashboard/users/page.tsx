@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import UsersClient from './users-client';
 import { fetchUsersAction } from '../../lib/actions';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'User Management',
   description: 'Kelola data pengguna sistem.',

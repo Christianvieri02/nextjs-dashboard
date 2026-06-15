@@ -156,8 +156,8 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
   const handleEditShipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingShipmentId) return;
-    if (editTotalCost === '') {
-      setErrorMsg('Harga/Tarif Pengiriman tidak boleh kosong.');
+    if (editTotalCost === '' || Number(editTotalCost) <= 0) {
+      setErrorMsg('Harga/Tarif Pengiriman tidak boleh kosong atau 0.');
       return;
     }
 
@@ -225,8 +225,8 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
   const handleCreateShipment = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowCreateErrors(true);
-    if (!userId || !senderName || !receiverName || !phone || !originCity || !destinationCity || !itemType || !shipmentDate || !weightKg || weightKg <= 0) {
-      setErrorMsg('Harap lengkapi semua kolom yang wajib diisi (*).');
+    if (!userId || !senderName || !receiverName || !phone || !originCity || !destinationCity || !itemType || !shipmentDate || !weightKg || weightKg <= 0 || totalCost <= 0) {
+      setErrorMsg('Harap lengkapi semua kolom yang wajib diisi (*) dan pastikan berat/tarif lebih besar dari 0.');
       return;
     }
 
@@ -838,7 +838,7 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                     }
                   }}
                   className={`w-full bg-[#1A1C24] border rounded p-3 text-xs text-white focus:outline-none transition ${
-                    editTotalCost === ''
+                    editTotalCost === '' || Number(editTotalCost) <= 0
                       ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30'
                       : 'border-gray-800 focus:border-[#D977F9] focus:ring-1 focus:ring-[#D977F9]/30'
                   }`}
@@ -860,7 +860,7 @@ export default function ShipmentsClient({ initialShipments, users }: ShipmentsCl
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || editTotalCost === ''}
+                  disabled={isLoading || editTotalCost === '' || Number(editTotalCost) <= 0}
                   className="px-4 py-2 bg-[#D977F9] hover:bg-[#c75be9] text-[#250F2D] font-bold rounded text-xs transition disabled:opacity-50"
                 >
                   {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}

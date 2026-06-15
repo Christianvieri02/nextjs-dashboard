@@ -336,6 +336,10 @@ export async function registerUserAction(fullName: string, email: string, phone:
       VALUES (${userId}, ${trimmedEmail}, ${hashedPass}, 'User', ${fullName}, ${trimmedEmail}, ${trimmedPhone})
     `;
 
+    revalidatePath('/dashboard/users');
+    revalidatePath('/dashboard/invoices');
+    revalidatePath('/dashboard/shipments');
+
     return { success: true };
   } catch (error: any) {
     console.error('Failed to register user:', error);

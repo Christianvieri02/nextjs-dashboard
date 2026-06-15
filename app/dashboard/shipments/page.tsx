@@ -3,6 +3,8 @@ import { fetchUsersAction } from '../../lib/actions';
 import postgres from 'postgres';
 import ShipmentsClient from './shipments-client';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Pengiriman Cargo',
   description: 'Kelola data pengiriman kargo.',

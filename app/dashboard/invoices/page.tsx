@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import InvoicesClient from './invoices-client';
 import { fetchAllInvoices, fetchCustomers } from '../../lib/data';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Tagihan & Invoices',
   description: 'Kelola tagihan pelanggan.',
